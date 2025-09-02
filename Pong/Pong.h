@@ -7,6 +7,11 @@ public:
     void Shutdown();
 private:
     void ProcessInput();
+
+    void GenerateWalls();
+    void GeneratePaddle();
+    void GenerateBall();
+
     void UpdateGame();
     void GenerateOutput();
 
