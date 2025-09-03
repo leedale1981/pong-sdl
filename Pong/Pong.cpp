@@ -13,8 +13,13 @@ struct Vector2 {
 SDL_Renderer* mRenderer;
 Vector2 mPaddlePosition;
 Vector2 mBallPosition;
+Vector2 mBallVel;
 Uint32 mTicksCount;
 int mPaddleDir;
+
+const int mWallThickness = 15;
+const int mBallThickness = 10;
+const int mBallHeight = 10;
 const int mPaddleH = 100;
 const int mPaddleT = 15;
 
@@ -24,6 +29,7 @@ Game::Game()
 {
     mBallPosition = {1024.0 / 2, 768.0 / 2};
     mPaddlePosition = {0,768.0 / 2};
+    mBallVel = {-700.0f, 735.0f};
     mTicksCount = 0;
     mPaddleDir = 0;
 }
@@ -101,6 +107,12 @@ Game::UpdateGame()
     while (!SDL_GetTicks() >= mTicksCount + 16)
         ;
     float deltaTime = (SDL_GetTicks() - mTicksCount) / 5000.0f;
+
+    if (deltaTime > 0.05f)
+    {
+        deltaTime = 0.05f;
+    }
+
     mTicksCount = SDL_GetTicks();
 
     if (mPaddleDir != 0) {
@@ -112,6 +124,37 @@ Game::UpdateGame()
         else if (mPaddlePosition.y > (768.0f - mPaddleH/2.0f - mPaddleT)) {
             mPaddlePosition.y = 768.0f - mPaddleH/2.0f - mPaddleT;
         }
+    }
+
+    mBallPosition.x += mBallVel.x * deltaTime;
+    mBallPosition.y += mBallVel.y * deltaTime;
+
+    float diff = mPaddlePosition.y - mBallPosition.y;
+    diff = (diff > 0.0f) ? diff : -diff;
+
+    if (
+        diff <= mPaddleH / 2.0f &&
+        mBallPosition.x <= 25.0f && mBallPosition.x >= 20.0f &&
+        mBallVel.x < 0.0f)
+    {
+        mBallVel.x *= -1.0f;
+    }
+    else if (mBallPosition.x <= 0.0f)
+    {
+        mIsRunning = false;
+    }
+    else if (mBallPosition.x >= (1024.0f - mWallThickness) && mBallVel.x > 0.0f)
+    {
+        mBallVel.x *= -1.0f;
+    }
+
+    if (mBallPosition.y <= mBallThickness && mBallVel.y < 0.0f)
+    {
+        mBallVel.y *= -1;
+    }
+    else if (mBallPosition.y >= (768 - mWallThickness) && mBallVel.y > 0.0f)
+    {
+        mBallVel.y *= -1;
     }
 }
 
@@ -141,13 +184,12 @@ Game::ProcessInput()
 }
 
 void Game::GenerateWalls() {
-    const int thickness = 15;
     SDL_SetRenderDrawColor(mRenderer, 255, 255, 255, 255);
     SDL_FRect topWall {
         0,
         0,
         1024,
-        thickness
+        mWallThickness
 
     };
 
@@ -155,17 +197,17 @@ void Game::GenerateWalls() {
 
     SDL_FRect bottomWall {
         0,
-        768 - thickness,
+        768 - mWallThickness,
         1024,
-        thickness
+        mWallThickness
     };
 
     SDL_RenderFillRect(mRenderer, &bottomWall);
 
     SDL_FRect backWall {
-        1024 - thickness,
+        1024 - mWallThickness,
         0,
-        thickness,
+        mWallThickness,
         768
     };
 
@@ -187,14 +229,17 @@ Game::GeneratePaddle() {
 
 void
 Game::GenerateBall() {
-    const int thickness = 10;
-    const int height = 10;
+
+    if (mBallPosition.y <= mBallThickness && mBallVel.y < 0.0f) {
+        mBallVel.y *= -1;
+    }
+
     SDL_SetRenderDrawColor(mRenderer, 255, 255, 255, 255);
     SDL_FRect paddle {
-        mBallPosition.x - thickness / 2,
-        mBallPosition.y - height / 2,
-        thickness,
-        height
+        mBallPosition.x - mBallThickness / 2,
+        mBallPosition.y - mBallHeight / 2,
+        mBallThickness,
+        mBallHeight
     };
 
     SDL_RenderFillRect(mRenderer, &paddle);
